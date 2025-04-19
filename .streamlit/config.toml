@@ -1,2 +1,5 @@
-﻿[server]
+[server]
 headless = true
+browser.serverAddress = "localhost"
+[browser]
+serverAddress = "localhost"
