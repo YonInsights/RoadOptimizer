@@ -1,11 +1,12 @@
 ﻿import streamlit as st
 from src.file_handler import parse_horizontal_alignment, parse_vertical_profile
-from src.design_standards import get_standard
 from src.optimization import (
     optimize_horizontal_alignment,
     optimize_vertical_profile,
     optimize_both_alignments,
 )
+from src.design_standards import get_standard
+import matplotlib.pyplot as plt
 
 def main():
     st.title("Road Alignment Optimization")
@@ -28,12 +29,20 @@ def main():
                 st.success("Horizontal Alignment Uploaded Successfully!")
                 st.session_state["horizontal_data"] = horizontal_data
 
-                # Display uploaded alignment in yellow bold line
+                # Display uploaded alignment in a table
                 st.markdown(
                     "<p style='color: yellow; font-weight: bold;'>Uploaded Horizontal Alignment:</p>",
                     unsafe_allow_html=True,
                 )
-                st.write(horizontal_data)
+                st.write(horizontal_data.head(5))  # Show first 5 rows
+
+                # Plot uploaded alignment
+                fig, ax = plt.subplots()
+                ax.plot(horizontal_data["Easting"], horizontal_data["Northing"], color="yellow", linewidth=2)
+                ax.set_title("Uploaded Horizontal Alignment")
+                ax.set_xlabel("Easting")
+                ax.set_ylabel("Northing")
+                st.pyplot(fig)
 
             except Exception as e:
                 st.error(f"Error parsing horizontal alignment: {e}")
@@ -48,12 +57,20 @@ def main():
                 st.success("Vertical Profile Uploaded Successfully!")
                 st.session_state["vertical_data"] = vertical_data
 
-                # Display uploaded profile in yellow bold line
+                # Display uploaded profile in a table
                 st.markdown(
                     "<p style='color: yellow; font-weight: bold;'>Uploaded Vertical Profile:</p>",
                     unsafe_allow_html=True,
                 )
-                st.write(vertical_data)
+                st.write(vertical_data.head(5))  # Show first 5 rows
+
+                # Plot uploaded vertical profile
+                fig, ax = plt.subplots()
+                ax.plot(vertical_data["Station"], vertical_data["Elevation"], color="yellow", linewidth=2)
+                ax.set_title("Uploaded Vertical Profile")
+                ax.set_xlabel("Station")
+                ax.set_ylabel("Elevation")
+                st.pyplot(fig)
 
             except Exception as e:
                 st.error(f"Error parsing vertical profile: {e}")
@@ -98,16 +115,6 @@ def main():
         try:
             # Retrieve minimum radius for validation
             min_radius = get_standard("minimum_radius", design_class, terrain_type)
-
-            # Calculate recommended speed for the given radius
-            required_speed = round((min_radius / 127) ** 0.5 * 3.6, 2)  # Formula from ERA manual
-
-            # Display warning if design speed exceeds recommended speed
-            if design_speed > required_speed:
-                st.warning(
-                    f"Warning: Design Speed ({design_speed} km/h) exceeds recommended speed "
-                    f"for this radius ({required_speed} km/h)."
-                )
 
             # Add section data to list
             sections.append({

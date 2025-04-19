@@ -1,67 +1,48 @@
 ﻿import ezdxf
 import pandas as pd
-from io import BytesIO
+import tempfile
 
-def parse_horizontal_alignment(file):
-    """
-    Parse horizontal alignment from DXF file.
-    Extracts Northing and Easting coordinates from LWPOLYLINE entities.
-    """
+def parse_horizontal_alignment(uploaded_file):
     try:
-        # Read the uploaded file content into memory
-        file_content = file.getvalue()
-        file_like = BytesIO(file_content)
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
 
-        # Use ezdxf.read() to parse the file content
-        doc = ezdxf.read(file_like)
+        # Read the temp file using readfile
+        doc = ezdxf.readfile(tmp_path)
         msp = doc.modelspace()
 
-        northing = []
-        easting = []
+        alignment_data = []
         for entity in msp:
-            if entity.dxftype() == 'LWPOLYLINE':  # Check for polyline entities
-                for vertex in entity.get_points():
-                    easting.append(vertex[0])  # X-coordinate
-                    northing.append(vertex[1])  # Y-coordinate
+            if entity.dxftype() == "LINE":
+                start = entity.dxf.start
+                end = entity.dxf.end
+                alignment_data.append({"Easting": start.x, "Northing": start.y})
+                alignment_data.append({"Easting": end.x, "Northing": end.y})
 
-        # Create a DataFrame
-        data = pd.DataFrame({
-            "Easting": easting,
-            "Northing": northing
-        })
-        return data
+        return pd.DataFrame(alignment_data)
 
     except Exception as e:
-        raise ValueError(f"Error parsing horizontal alignment: {e}")
-
-def parse_vertical_profile(file):
-    """
-    Parse vertical profile from DXF file.
-    Extracts Station and Elevation from LWPOLYLINE entities.
-    """
+        raise ValueError(f"Failed to parse DXF: {e}")
+def parse_vertical_profile(uploaded_file):
     try:
-        # Read the uploaded file content into memory
-        file_content = file.getvalue()
-        file_like = BytesIO(file_content)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
 
-        # Use ezdxf.read() to parse the file content
-        doc = ezdxf.read(file_like)
+        doc = ezdxf.readfile(tmp_path)
         msp = doc.modelspace()
 
         station = []
         elevation = []
         for entity in msp:
-            if entity.dxftype() == 'LWPOLYLINE':  # Check for polyline entities
+            if entity.dxftype() == 'LWPOLYLINE':
                 for vertex in entity.get_points():
-                    station.append(vertex[0])  # Assume X-axis is Station
-                    elevation.append(vertex[1])  # Assume Y-axis is Elevation
+                    station.append(vertex[0])
+                    elevation.append(vertex[1])
 
-        # Create a DataFrame
-        data = pd.DataFrame({
-            "Station": station,
-            "Elevation": elevation
-        })
-        return data
+        return pd.DataFrame({"Station": station, "Elevation": elevation})
 
     except Exception as e:
         raise ValueError(f"Error parsing vertical profile: {e}")
